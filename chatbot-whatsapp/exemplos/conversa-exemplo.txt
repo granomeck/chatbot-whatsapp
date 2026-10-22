@@ -1,8 +1,0 @@
-21/10/2026 14:02 - As mensagens e ligações são protegidas com a criptografia de ponta a ponta.
-21/10/2026 14:02 - Maria Souza: Oi, boa tarde! Tem o vestido floral no M?
-21/10/2026 14:05 - Loja Exemplo: Oi Maria, boa tarde! Tem sim 😊 Sai por R$ 89,90.
-21/10/2026 14:05 - Loja Exemplo: Prefere retirar ou quer entrega?
-21/10/2026 14:06 - Maria Souza: Entrega. Meu número de casa é (11) 4567-8910
-caso não me ache no celular
-21/10/2026 14:07 - Maria Souza: <Mídia oculta>
-21/10/2026 14:08 - Loja Exemplo: Perfeito! A entrega na cidade é R$ 10 e chega hoje se fechar até as 15h.
