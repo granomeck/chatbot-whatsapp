@@ -1,0 +1,27 @@
+=== APAGUE ESTE EXEMPLO E ESCREVA AS INFORMAÇÕES DO SEU NEGÓCIO ===
+Escreva do jeito que você explicaria para um funcionário novo. Quanto mais completo, melhor o robô responde.
+
+SOBRE A LOJA
+- Loja Exemplo: roupas femininas e masculinas, do P ao GG.
+- Endereço: Rua das Flores, 123, Centro. Também vendemos pelo WhatsApp com entrega.
+
+HORÁRIO
+- Horário de funcionamento: segunda a sexta das 9h às 18h, sábado das 9h às 13h. Domingo fechado.
+
+PRODUTOS E PREÇOS
+- Camiseta básica: R$ 39,90 (cores: branca, preta, azul).
+- Calça jeans: R$ 119,90.
+- Vestido floral: R$ 89,90.
+
+BLACK FRIDAY (27/11)
+- Promoção de Black Friday: 30% de desconto em toda a loja de 24/11 a 30/11.
+- Compre 3 camisetas e pague 2 durante a Black Friday.
+
+PAGAMENTO E ENTREGA
+- Formas de pagamento: Pix (5% de desconto), cartão de crédito em até 3x sem juros, débito e dinheiro na loja.
+- Entrega na cidade: R$ 10,00, no mesmo dia para pedidos até as 15h. Retirada na loja é grátis.
+- Trocas: até 7 dias com etiqueta.
+
+REGRAS PARA O ATENDENTE
+- Sempre pergunte o tamanho e a cor antes de passar o pedido.
+- Para fechar o pedido, chame uma pessoa da equipe.
