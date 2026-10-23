@@ -129,13 +129,35 @@ O que preencher:
 | `SEU_WHATSAPP_PESSOAL` | Seu WhatsApp pessoal (não o do robô), só números: 55 + DDD + número |
 | `HORARIO_ATENDIMENTO` | Em branco = 24h. Ou, por exemplo, `08:00-18:00` |
 
-### 4.2 Ensine o robô sobre o seu negócio (arquivo `meu-negocio.txt`)
+### 4.2 Ensine o robô sobre o seu negócio: o jeito fácil é pelo WhatsApp
+
+Não precisa mexer em arquivo nenhum. Quando o robô conecta pela primeira vez, ele **manda uma mensagem de configuração no seu WhatsApp pessoal** (o número de `SEU_WHATSAPP_PESSOAL`) e te guia em 2 passos:
+
+1. **Conversas de exemplo:** você exporta conversas com clientes e manda para o robô (⋮ → Mais → Exportar conversa → Sem mídia). Se a conversa estiver no WhatsApp do próprio negócio, mande para o seu WhatsApp pessoal e depois encaminhe para o robô.
+2. **Informações do negócio:** o robô te manda um texto pronto para colar numa IA grátis (Claude, ChatGPT ou Gemini) junto com fotos do cardápio, prints de preços e o link do seu Instagram ou site. Você cola a resposta da IA na conversa com o robô e pronto.
+
+Depois, para mudar qualquer coisa, mande **atualizar** para o robô:
+
+| Opção | O que faz |
+| --- | --- |
+| 1 | Troca as informações do negócio (preços, produtos, horário…). Mandou errado? Escreva `desfazer`. |
+| 2 | Adiciona mais conversas de exemplo |
+| 3 | Muda o horário de atendimento (ex.: `8h às 18h` ou `24h`) |
+| 4 | Escolhe para onde vão os avisos: seu WhatsApp ou o **grupo da equipe** |
+| 5 | Liga/desliga **pedidos e encomendas**: o robô anota o pedido, confirma com o cliente e manda o resumo para a equipe finalizar |
+| 6 | Mostra tudo o que o robô sabe hoje |
+
+Só o seu número consegue usar essas opções. Mensagens normais suas (fora do menu) são respondidas como se você fosse um cliente, bom para testar. Perdeu a mensagem de configuração? Mande `configurar`.
+
+Prefere fazer pelos arquivos? Veja os itens 4.3 e 4.4.
+
+### 4.3 Pelos arquivos: informações do negócio (`meu-negocio.txt`)
 
 Abra o `meu-negocio.txt` (`nano meu-negocio.txt` no Termux, Bloco de Notas no PC), **apague o exemplo** e escreva como se estivesse explicando para um funcionário novo: o que você vende, preços, horário, pagamento, entrega, trocas e as promoções de **Black Friday** e fim de ano.
 
 O robô **nunca inventa preço**: se não estiver nesse arquivo, ele chama você.
 
-### 4.3 O pulo do gato: suas conversas antigas (pasta `conversas`)
+### 4.4 Pelos arquivos: suas conversas antigas (pasta `conversas`)
 
 Exporte de 10 a 30 conversas boas do seu WhatsApp e coloque os arquivos `.txt` na pasta `conversas`:
 
@@ -152,7 +174,7 @@ O robô aprende as perguntas que mais chegam e o seu jeito de falar. Ele apaga s
 npm run simular
 ```
 
-Converse como se fosse um cliente. Teste preço, entrega, Black Friday e "quero falar com um atendente". Se alguma resposta sair errada, melhore o `meu-negocio.txt` e teste de novo. Para sair, digite `sair`.
+Converse como se fosse um cliente. Teste preço, entrega, Black Friday e "quero falar com um atendente". Para testar o menu do dono, comece a mensagem com `dono:` (exemplo: `dono: atualizar`). Se alguma resposta sair errada, melhore o `meu-negocio.txt` e teste de novo. Para sair, digite `sair`.
 
 ---
 
@@ -196,7 +218,9 @@ Comandos úteis: `pm2 logs robo` (ver o que está acontecendo), `pm2 restart rob
 
 ## Fez alguma mudança? Atualize o robô
 
-Sempre que mudar alguma coisa, como o `meu-negocio.txt`, o `.env`, as conversas ou o código, rode este comando para o robô passar a usar a mudança:
+Mudanças feitas pelo WhatsApp (mandando **atualizar** para o robô) já valem na hora, sem comando nenhum.
+
+Se você mudar alguma coisa nos arquivos, como o `meu-negocio.txt`, o `.env`, as conversas ou o código, rode este comando para o robô passar a usar a mudança:
 
 ```
 bash ~/chatbot-whatsapp/atualizar.sh

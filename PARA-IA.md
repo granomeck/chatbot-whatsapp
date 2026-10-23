@@ -18,12 +18,18 @@ Robô de atendimento no WhatsApp, em Node.js (versão 20 ou mais nova), feito co
 | Ligação com o WhatsApp (digitando, aviso ao dono, grupos) | `app.js` |
 | Áudios e fotos que chegam (baixar e mandar ao Gemini) | `src/midia.js` |
 | Conexão com o WhatsApp por código (sem QR) | `src/conexao.js` |
+| Painel do dono pelo WhatsApp (mensagem de configuração, menu "atualizar") | `src/painel-dono.js` |
+| Ajustes feitos pelo WhatsApp (horário, grupo de avisos, pedidos) | `src/ajustes.js` (salvos em `ajustes.json`) |
+| Pedidos e encomendas (marcador `[PEDIDO: ...]`) | `src/cerebro.js` |
+| Conversas do iPhone em .zip | `src/zip.js` |
 | Compatibilidade com Android/Termux | `src/compat-android.js` e `src/preparar-android.js` |
 | Como as conversas exportadas são limpas | `src/limpar-conversas.js` |
 
 O cérebro (`src/cerebro.js`) não depende do WhatsApp. Por isso dá para testar tudo com `npm run simular` e com os testes em `testes/`.
 
 ## Regras ao sugerir mudanças
+
+0. Mudanças simples não precisam de código: informações do negócio, conversas de exemplo, horário, grupo que recebe os avisos e pedidos/encomendas o dono muda mandando **atualizar** para o robô pelo WhatsApp. Sugira isso primeiro.
 
 1. **Depois de qualquer mudança, peça para o dono rodar:**
 
