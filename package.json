@@ -18,5 +18,8 @@
     "@builderbot/database-json": "^1.2.2",
     "@builderbot/provider-baileys": "^1.2.2"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "overrides": {
+    "sharp": "^0.35.5"
+  }
 }
