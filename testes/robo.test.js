@@ -219,3 +219,41 @@ test('Android: troca sharp e ffmpeg por versões compatíveis (e não mexe em ou
   const { default: sharpEsm } = await import(join(pasta, 'node_modules', 'sharp', 'index.mjs'))
   assert.equal(typeof sharpEsm, 'function')
 })
+
+test('conexão por código: pede o código só quando o WhatsApp está pronto, um por conexão', async () => {
+  const { ligarConexaoPorCodigo } = await import('../src/conexao.js')
+  const { EventEmitter } = await import('node:events')
+  const provider = new EventEmitter()
+  const pedidos = []; const linhas = []; const repassados = []
+  provider.on('require_action', (d) => repassados.push(d))
+  const novaConexao = () => ({ requestPairingCode: async (n) => { pedidos.push(n); return 'ABCD1234' } })
+  ligarConexaoPorCodigo(provider, '5515997176759', (l) => linhas.push(l))
+  provider.vendor = novaConexao()
+  provider.emit('require_action', { payload: { qr: 'qr-1' } })
+  provider.emit('require_action', { payload: { qr: 'qr-2' } }) // mesmo socket: não pede de novo
+  await new Promise((r) => setTimeout(r, 5))
+  assert.deepEqual(pedidos, ['5515997176759'])
+  assert.ok(linhas.some((l) => l.includes('ABCD-1234')))
+  assert.equal(repassados.length, 0) // aviso de QR não aparece
+  provider.vendor = novaConexao() // reconectou: pede um código novo
+  provider.emit('require_action', { payload: { qr: 'qr-3' } })
+  await new Promise((r) => setTimeout(r, 5))
+  assert.equal(pedidos.length, 2)
+  provider.emit('require_action', { payload: { code: 'XYZ' } }) // outros avisos passam normalmente
+  assert.equal(repassados.length, 1)
+})
+
+test('conexão por código: se o WhatsApp recusar o pedido, tenta de novo no próximo aviso', async () => {
+  const { ligarConexaoPorCodigo } = await import('../src/conexao.js')
+  const { EventEmitter } = await import('node:events')
+  const provider = new EventEmitter(); let tentativas = 0
+  provider.vendor = { requestPairingCode: async () => { tentativas++; if (tentativas === 1) throw new Error('Connection Closed'); return 'AAAA1111' } }
+  const linhas = []
+  ligarConexaoPorCodigo(provider, '55159', (l) => linhas.push(l))
+  provider.emit('require_action', { payload: { qr: '1' } })
+  await new Promise((r) => setTimeout(r, 5))
+  provider.emit('require_action', { payload: { qr: '2' } })
+  await new Promise((r) => setTimeout(r, 5))
+  assert.equal(tentativas, 2)
+  assert.ok(linhas.some((l) => l.includes('AAAA-1111')))
+})
