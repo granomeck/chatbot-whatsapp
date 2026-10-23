@@ -35,7 +35,7 @@ pkg install -y curl && curl -fsSL https://raw.githubusercontent.com/granomeck/ch
 
 Ele instala tudo, baixa o robô, pergunta a chave e os números, liga o robô 24h e mostra o código para conectar no WhatsApp Business (**⋮ → Dispositivos conectados → Conectar dispositivo → Conectar com número de telefone**).
 
-Depois, é só escrever as informações do seu negócio (`nano ~/chatbot-whatsapp/meu-negocio.txt`) e rodar `bash ~/chatbot-whatsapp/atualizar.sh`.
+Assim que conecta, o robô manda uma mensagem no seu WhatsApp pessoal e te guia para ensinar a ele sobre o seu negócio (veja o item 4.2). Para mudar algo depois, mande **atualizar** para o robô.
 
 O passo a passo completo abaixo serve para o computador ou para quem quer entender cada etapa.
 
