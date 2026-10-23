@@ -9,7 +9,7 @@ import { lerExportacao } from './limpar-conversas.js'
 import { textoDoZip } from './zip.js'
 
 export const PROMPT_MEU_NEGOCIO = `Você vai me ajudar a escrever as informações do meu negócio para o meu atendente virtual de WhatsApp.
-Vou te mandar fotos, prints, cardápio, tabela de preços e o link do meu site ou Instagram.
+Vou te mandar fotos, prints, catálogo, tabela de preços e o link do meu site ou Instagram.
 Organize tudo neste modelo, em texto simples (sem tabelas, sem negrito, sem emojis):
 
 SOBRE O NEGÓCIO
@@ -124,7 +124,7 @@ export function criarPainelDono({
         `O jeito mais fácil:\n` +
         `1. Abra uma IA grátis: Claude (claude.ai), ChatGPT (chatgpt.com) ou Gemini (gemini.google.com)\n` +
         `2. Copie a *próxima mensagem* e cole na IA\n` +
-        `3. Mande junto fotos do cardápio, prints de preços e o link do seu Instagram ou site\n` +
+        `3. Mande junto fotos do catálogo, prints de preços e o link do seu Instagram ou site\n` +
         `4. Copie o texto que a IA devolver e cole aqui\n\n` +
         `Se preferir, mande o arquivo meu-negocio.txt.`,
       PROMPT_MEU_NEGOCIO,
