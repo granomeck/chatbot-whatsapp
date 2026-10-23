@@ -257,3 +257,191 @@ test('conexão por código: se o WhatsApp recusar o pedido, tenta de novo no pr�
   assert.equal(tentativas, 2)
   assert.ok(linhas.some((l) => l.includes('AAAA-1111')))
 })
+
+// ---------------- Painel do dono pelo WhatsApp ----------------
+import { mkdtempSync, writeFileSync as escrever, readFileSync as ler, existsSync as existe, readdirSync as listar } from 'node:fs'
+import { tmpdir as pastaTemp } from 'node:os'
+import { join as juntar } from 'node:path'
+import { deflateRawSync } from 'node:zlib'
+import { criarPainelDono, mesmoNumero, lerHorario, PROMPT_MEU_NEGOCIO } from '../src/painel-dono.js'
+import { lerAjustes, salvarAjustes, AJUSTES_PADRAO } from '../src/ajustes.js'
+import { textoDoZip } from '../src/zip.js'
+import { documentoDoAnexo } from '../src/midia.js'
+import { carregarConhecimento } from '../src/conhecimento.js'
+
+const CONVERSA = '21/10/2026 18:12 - Maria Souza: Oi, tem bolo de cenoura?\n21/10/2026 18:13 - Padaria: Tem sim! R$ 25,00\n21/10/2026 18:14 - Maria Souza: Quero um para amanhã'
+const NEGOCIO = 'SOBRE O NEGÓCIO\nPadaria Teste, Rua A, 10, Centro. Fazemos entrega.\n\nPRODUTOS E PREÇOS\nBolo de cenoura: R$ 25,00\nPão francês: R$ 0,90 a unidade'
+
+function montarPainel({ grupos = [] } = {}) {
+  const pasta = mkdtempSync(juntar(pastaTemp(), 'painel-'))
+  escrever(juntar(pasta, 'meu-negocio.txt'), '=== APAGUE ESTE EXEMPLO E ESCREVA AS INFORMAÇÕES DO SEU NEGÓCIO ===\nexemplo')
+  const config = { nomeNegocio: 'Padaria Teste', horario: '' }
+  const ajustes = lerAjustes(pasta)
+  let recargas = 0
+  const painel = criarPainelDono({
+    pasta,
+    config,
+    ajustes,
+    salvarAjustes: (a) => salvarAjustes(a, pasta),
+    recarregar: () => {
+      recargas++
+      return carregarConhecimento({ pasta })
+    },
+    listarGrupos: async () => grupos,
+  })
+  return { pasta, config, ajustes, painel, recargas: () => recargas }
+}
+const doc = (nome, conteudo, mime = 'text/plain') => ({ nome, mime, dados: Buffer.isBuffer(conteudo) ? conteudo : Buffer.from(conteudo) })
+
+test('reconhece o número do dono com e sem o 9', () => {
+  assert.ok(mesmoNumero('5515997176759', '551597176759@s.whatsapp.net'))
+  assert.ok(mesmoNumero('+55 (15) 99717-6759', '5515997176759'))
+  assert.ok(!mesmoNumero('5515997176759', '5515997176758'))
+  assert.ok(!mesmoNumero('', '5515997176759'))
+})
+
+test('entende o horário de vários jeitos', () => {
+  assert.equal(lerHorario('8h às 18h'), '08:00-18:00')
+  assert.equal(lerHorario('07:30-12:00'), '07:30-12:00')
+  assert.equal(lerHorario('24h'), '')
+  assert.equal(lerHorario('quando der'), null)
+})
+
+test('configuração inicial: conversas, prompt para a IA e informações do negócio', async () => {
+  const { pasta, ajustes, painel } = montarPainel()
+  const [boasVindas] = painel.boasVindas()
+  assert.match(boasVindas, /PASSO 1 de 2/)
+  assert.match(boasVindas, /Exportar conversa/)
+
+  let r = await painel.receber({ documento: doc('Conversa do WhatsApp com Maria.txt', CONVERSA) })
+  assert.match(r.respostas[0], /Conversa recebida \(3 mensagens\)\. Agora tenho 1 conversa de exemplo/)
+  assert.equal(listar(juntar(pasta, 'conversas')).length, 1)
+
+  r = await painel.receber({ documento: doc('foto.jpg', 'xx', 'image/jpeg') })
+  assert.match(r.respostas[0], /não é uma conversa/)
+
+  r = await painel.receber({ texto: '*Pronto!*' })
+  assert.match(r.respostas[0], /PASSO 2 de 2/)
+  assert.equal(r.respostas[1], PROMPT_MEU_NEGOCIO) // o prompt vai numa mensagem separada, fácil de copiar
+
+  r = await painel.receber({ texto: 'padaria de bairro' })
+  assert.match(r.respostas[0], /muito curto/)
+
+  r = await painel.receber({ texto: NEGOCIO })
+  assert.match(r.respostas[0], /Guardei as informações do negócio/)
+  assert.match(r.respostas[0], /Configuração concluída/)
+  assert.match(r.respostas[0], /atualizar/)
+  assert.match(ler(juntar(pasta, 'meu-negocio.txt'), 'utf8'), /Bolo de cenoura: R\$ 25,00/)
+  assert.equal(ajustes.configurado, true)
+  assert.equal(lerAjustes(pasta).configurado, true) // ficou salvo no ajustes.json
+
+  // depois de configurado, mensagens comuns do dono vão para o atendimento normal (para ele testar)
+  r = await painel.receber({ texto: 'oi, tem pão?' })
+  assert.equal(r.tratado, false)
+})
+
+test('desfazer volta o texto anterior do negócio', async () => {
+  const { pasta, painel } = montarPainel()
+  await painel.receber({ texto: 'atualizar' })
+  await painel.receber({ texto: '1' })
+  await painel.receber({ texto: NEGOCIO })
+  const r = await painel.receber({ texto: 'desfazer' })
+  assert.match(r.respostas[0], /voltei para o texto anterior/)
+  assert.match(ler(juntar(pasta, 'meu-negocio.txt'), 'utf8'), /APAGUE ESTE EXEMPLO/)
+})
+
+test('menu atualizar: horário, pedidos e avisos num grupo da equipe', async () => {
+  const grupos = [{ jid: '1203630@g.us', nome: 'Grupo Padaria' }]
+  const { pasta, config, ajustes, painel } = montarPainel({ grupos })
+  let r = await painel.receber({ texto: 'Atualizar' })
+  assert.match(r.respostas[0], /Configurações do robô/)
+
+  await painel.receber({ texto: '3' })
+  r = await painel.receber({ texto: '6h as 19h' })
+  assert.match(r.respostas[0], /06:00-19:00/)
+  assert.equal(config.horario, '06:00-19:00')
+
+  r = await painel.receber({ texto: '5' })
+  assert.match(r.respostas[0], /LIGADO/)
+  assert.equal(ajustes.pedidos, true)
+
+  r = await painel.receber({ texto: '4' })
+  assert.match(r.respostas[0], /\*2\* - Grupo "Grupo Padaria"/)
+  r = await painel.receber({ texto: '2' })
+  assert.match(r.respostas[0], /avisos agora vão para o grupo "Grupo Padaria"/)
+  assert.equal(r.envios[0].para, '1203630@g.us') // o robô avisa no grupo que ele passou a receber
+  assert.deepEqual(lerAjustes(pasta).grupoAvisos, { jid: '1203630@g.us', nome: 'Grupo Padaria' })
+
+  r = await painel.receber({ texto: '6' })
+  assert.match(r.respostas[0], /Ainda é o \*texto de exemplo\*/)
+
+  r = await painel.receber({ texto: '0' })
+  assert.match(r.respostas[0], /Saí das configurações/)
+  r = await painel.receber({ texto: '1' })
+  assert.equal(r.tratado, false) // fora do menu, "1" é uma mensagem comum
+})
+
+test('menu fecha sozinho depois de 30 minutos parado', async () => {
+  let relogio = 0
+  const pasta = mkdtempSync(juntar(pastaTemp(), 'painel-'))
+  const painel = criarPainelDono({ pasta, config: { nomeNegocio: 'X', horario: '' }, ajustes: { ...AJUSTES_PADRAO }, agora: () => relogio })
+  await painel.receber({ texto: 'atualizar' })
+  relogio += 31 * 60 * 1000
+  const r = await painel.receber({ texto: '1' })
+  assert.equal(r.tratado, false)
+})
+
+// monta um .zip de verdade (compactado) só com JavaScript, para o teste rodar em qualquer aparelho
+function montarZip(nome, texto) {
+  const nomeB = Buffer.from(nome)
+  const dados = deflateRawSync(Buffer.from(texto))
+  const tam = Buffer.byteLength(texto)
+  const local = Buffer.alloc(30)
+  local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt16LE(8, 8)
+  local.writeUInt32LE(dados.length, 18); local.writeUInt32LE(tam, 22); local.writeUInt16LE(nomeB.length, 26)
+  const central = Buffer.alloc(46)
+  central.writeUInt32LE(0x02014b50, 0); central.writeUInt16LE(20, 4); central.writeUInt16LE(20, 6); central.writeUInt16LE(8, 10)
+  central.writeUInt32LE(dados.length, 20); central.writeUInt32LE(tam, 24); central.writeUInt16LE(nomeB.length, 28); central.writeUInt32LE(0, 42)
+  const inicioCentral = local.length + nomeB.length + dados.length
+  const fim = Buffer.alloc(22)
+  fim.writeUInt32LE(0x06054b50, 0); fim.writeUInt16LE(1, 8); fim.writeUInt16LE(1, 10)
+  fim.writeUInt32LE(central.length + nomeB.length, 12); fim.writeUInt32LE(inicioCentral, 16)
+  return Buffer.concat([local, nomeB, dados, central, nomeB, fim])
+}
+
+test('conversa exportada pelo iPhone (.zip) é aceita', async () => {
+  const zip = montarZip('_chat.txt', '[21/10/2026, 18:12:05] João Lima: Oi, aceita pix?\n[21/10/2026, 18:13:00] Padaria: Aceita sim!')
+  assert.match(textoDoZip(zip), /aceita pix/)
+  const { painel } = montarPainel()
+  const r = await painel.receber({ documento: doc('Conversa do WhatsApp com João.zip', zip, 'application/zip') })
+  assert.match(r.respostas[0], /Conversa recebida \(2 mensagens\)/)
+})
+
+test('lê nome e tipo do documento que chegou no WhatsApp', () => {
+  const info = documentoDoAnexo({ message: { documentWithCaptionMessage: { message: { documentMessage: { fileName: 'meu-negocio.txt', mimetype: 'text/plain; charset=utf-8', caption: '' } } } } })
+  assert.deepEqual(info, { nome: 'meu-negocio.txt', mime: 'text/plain', legenda: '' })
+  assert.equal(documentoDoAnexo({ message: { conversation: 'oi' } }), null)
+})
+
+test('pedidos ligados: o robô anota, tira o marcador e avisa a equipe', async () => {
+  const config = { ...configBase, pedidos: true }
+  const ia = iaQueResponde('Anotado, Ana! A equipe já vai confirmar seu pedido. [PEDIDO: 2 bolos de cenoura, sábado 10h, retirada, Ana]')
+  const cerebro = criarCerebro({ config, conhecimento: { negocio: 'Bolo: R$ 25' }, ia })
+  assert.match(cerebro.instrucoes, /\[PEDIDO:/)
+  const r = await cerebro.responder('5511988887777', 'Ana', 'pode confirmar')
+  assert.deepEqual(r.respostas, ['Anotado, Ana! A equipe já vai confirmar seu pedido.'])
+  assert.equal(r.pedido, '2 bolos de cenoura, sábado 10h, retirada, Ana')
+  assert.match(r.aviso, /Novo pedido/)
+  assert.ok((await cerebro.responder('5511988887777', 'Ana', 'oi')).ignorar) // equipe finaliza
+})
+
+test('pedidos desligados: instrução antiga e recarregar troca as informações sem reiniciar', async () => {
+  const config = { ...configBase, pedidos: false }
+  const cerebro = criarCerebro({ config, conhecimento: { negocio: 'Pão: R$ 1' }, ia: iaQueResponde('ok') })
+  assert.doesNotMatch(cerebro.instrucoes, /\[PEDIDO:/)
+  assert.match(cerebro.instrucoes, /quiser fechar pedido/)
+  config.pedidos = true
+  cerebro.recarregar({ negocio: 'Pão: R$ 2' })
+  assert.match(cerebro.instrucoes, /Pão: R\$ 2/)
+  assert.match(cerebro.instrucoes, /\[PEDIDO:/)
+})
