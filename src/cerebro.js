@@ -30,6 +30,10 @@ COMO RESPONDER
 - Se não souber a resposta, ou se o cliente quiser fechar pedido, negociar, reclamar ou falar com alguém,
   diga que vai chamar uma pessoa da equipe e escreva ${MARCADOR_HUMANO} no final da resposta.
 - Se perguntarem se você é um robô, diga a verdade: é um assistente virtual da loja.
+- Se o cliente mandar um ÁUDIO, ouça e responda ao que ele falou, por texto. Não diga que é um áudio.
+- Se o cliente mandar uma IMAGEM (foto de produto, print, comprovante), entenda o que aparece e responda.
+  Se for um comprovante de pagamento, agradeça e chame uma pessoa da equipe para conferir.
+  Se não der para entender o áudio ou a imagem, peça com educação para o cliente escrever.
 
 INFORMAÇÕES DO NEGÓCIO
 ${negocio || '(o dono ainda não preencheu o arquivo meu-negocio.txt — chame uma pessoa para qualquer dúvida)'}
@@ -74,27 +78,33 @@ export function criarCerebro({ config, conhecimento, ia, agora = () => Date.now(
     return null
   }
 
-  async function responder(numero, nome, texto) {
+  // anexo (opcional): { tipo: 'audio' | 'imagem', mime, base64, legenda }
+  async function responder(numero, nome, texto, anexo = null) {
     const bloqueio = filtro(numero)
     if (bloqueio) return bloqueio
-    if (!texto) return { ignorar: true, motivo: 'vazio' }
+    texto = (texto || '').trim()
+    if (!texto && !anexo) return { ignorar: true, motivo: 'vazio' }
 
     const historico = historicoDe(numero)
-    if (pedeHumano(texto)) {
-      historico.push({ papel: 'cliente', texto })
-      return chamarHumano(numero, nome, texto, 'Claro! Já chamei uma pessoa da equipe, em instantes ela te responde por aqui. 😊')
+    // o que fica guardado na memória da conversa (o arquivo em si não é guardado)
+    const registro = anexo
+      ? `[${anexo.tipo === 'audio' ? 'áudio enviado' : 'imagem enviada'} pelo cliente]${texto ? ' ' + texto : ''}`
+      : texto
+    if (texto && pedeHumano(texto)) {
+      historico.push({ papel: 'cliente', texto: registro })
+      return chamarHumano(numero, nome, registro, 'Claro! Já chamei uma pessoa da equipe, em instantes ela te responde por aqui. 😊')
     }
 
-    historico.push({ papel: 'cliente', texto })
+    historico.push({ papel: 'cliente', texto: registro })
     let resposta
     try {
-      resposta = (await ia.gerar({ instrucoes, historico })).trim()
+      resposta = (await ia.gerar({ instrucoes, historico, anexo })).trim()
     } catch (erro) {
       historico.pop()
       if (erro.status === 429) {
         return { respostas: ['Estou com muitas mensagens agora 😅 Pode me mandar de novo daqui a 1 minutinho?'], erro: 'limite_da_ia' }
       }
-      return { ...chamarHumano(numero, nome, texto, 'Tive um probleminha aqui, mas já chamei uma pessoa da equipe para te ajudar!'), erro: erro.message }
+      return { ...chamarHumano(numero, nome, registro, 'Tive um probleminha aqui, mas já chamei uma pessoa da equipe para te ajudar!'), erro: erro.message }
     }
 
     const precisaHumano = resposta.includes(MARCADOR_HUMANO)
@@ -107,19 +117,19 @@ export function criarCerebro({ config, conhecimento, ia, agora = () => Date.now(
     const respostas = baloes.length > 3 ? [baloes.slice(0, 2), baloes.slice(2).join('\n')].flat() : baloes
 
     if (precisaHumano) {
-      const r = chamarHumano(numero, nome, texto, '')
+      const r = chamarHumano(numero, nome, registro, '')
       return { ...r, respostas }
     }
     return { respostas }
   }
 
-  // áudio, foto, figurinha: avisa uma vez a cada 10 minutos
+  // vídeo, figurinha, documento ou mídia que não deu para baixar: avisa uma vez a cada 10 minutos
   function midia(numero) {
     const bloqueio = filtro(numero)
     if (bloqueio) return bloqueio
     if (agora() - (avisoMidia.get(numero) || 0) < 10 * 60 * 1000) return { ignorar: true, motivo: 'midia_repetida' }
     avisoMidia.set(numero, agora())
-    return { respostas: ['Por enquanto eu só consigo ler mensagens de texto. Pode escrever sua dúvida? 😊'] }
+    return { respostas: ['Esse tipo de arquivo eu ainda não consigo abrir. Pode me mandar por texto, áudio ou foto? 😊'] }
   }
 
   return { responder, midia, instrucoes }

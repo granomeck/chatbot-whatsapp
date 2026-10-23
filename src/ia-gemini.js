@@ -4,7 +4,7 @@
 
 const DEVE_TENTAR_RESERVA = (status) => status === 429 || status >= 500 || status === undefined
 
-async function chamarGemini({ chave, modelo, instrucoes, historico }) {
+async function chamarGemini({ chave, modelo, instrucoes, historico, anexo }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`
   const resposta = await fetch(url, {
     method: 'POST',
@@ -12,7 +12,7 @@ async function chamarGemini({ chave, modelo, instrucoes, historico }) {
     signal: AbortSignal.timeout(30000),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: instrucoes }] },
-      contents: historico.map((m) => ({ role: m.papel === 'robo' ? 'model' : 'user', parts: [{ text: m.texto }] })),
+      contents: montarConteudo(historico, anexo),
       generationConfig: { temperature: 0.4, maxOutputTokens: 500 },
     }),
   })
@@ -28,15 +28,24 @@ async function chamarGemini({ chave, modelo, instrucoes, historico }) {
   return texto
 }
 
+// O áudio ou a imagem vai junto da última mensagem do cliente
+export function montarConteudo(historico, anexo) {
+  return historico.map((m, i) => {
+    const parts = [{ text: m.texto }]
+    if (anexo && i === historico.length - 1) parts.unshift({ inlineData: { mimeType: anexo.mime, data: anexo.base64 } })
+    return { role: m.papel === 'robo' ? 'model' : 'user', parts }
+  })
+}
+
 export function criarIAGemini({ chave, chaveReserva = '', modelo, aoUsarReserva = () => {} }) {
   return {
-    async gerar({ instrucoes, historico }) {
+    async gerar({ instrucoes, historico, anexo }) {
       try {
-        return await chamarGemini({ chave, modelo, instrucoes, historico })
+        return await chamarGemini({ chave, modelo, instrucoes, historico, anexo })
       } catch (erro) {
         if (!chaveReserva || !DEVE_TENTAR_RESERVA(erro.status)) throw erro
         aoUsarReserva(erro)
-        return chamarGemini({ chave: chaveReserva, modelo, instrucoes, historico })
+        return chamarGemini({ chave: chaveReserva, modelo, instrucoes, historico, anexo })
       }
     },
   }

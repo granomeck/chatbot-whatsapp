@@ -7,7 +7,8 @@ const PALAVRAS = ['preco', 'valor', 'quanto', 'horario', 'abre', 'fecha', 'entre
 export function criarIADemo(conhecimento) {
   const linhas = (conhecimento.negocio || '').split(/\r?\n/).map((l) => l.trim()).filter((l) => l.includes(':')) // só linhas com informação, não títulos
   return {
-    async gerar({ historico }) {
+    async gerar({ historico, anexo }) {
+      if (anexo) return `[modo demonstração: recebi ${anexo.tipo === 'audio' ? 'um áudio' : 'uma imagem'}. Com a chave do Gemini no .env eu entendo e respondo.] Pode me escrever sua dúvida?`
       const pergunta = normalizar(historico[historico.length - 1].texto)
       const palavra = PALAVRAS.find((p) => pergunta.includes(p))
       const linha = palavra && linhas.find((l) => normalizar(l).includes(palavra.slice(0, 5)))
