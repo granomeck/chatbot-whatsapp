@@ -29,6 +29,7 @@ perguntar() {
 }
 so_numeros() { printf '%s' "$1" | tr -cd '0-9'; }
 
+principal() {
 echo ""
 verde "🤖 Instalando o robô de WhatsApp com IA"
 
@@ -110,4 +111,12 @@ echo ""
 if [ -t 1 ] && [ -z "${SEM_LOGS:-}" ]; then
   sleep 3
   pm2 logs robo --lines 30
+fi
+}
+
+# Só começa depois de o script inteiro ter sido lido (seguro com "curl | bash")
+if { : < /dev/tty; } 2>/dev/null; then
+  principal "$@" < /dev/tty
+else
+  principal "$@" < /dev/null
 fi
