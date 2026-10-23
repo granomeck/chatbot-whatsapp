@@ -30,7 +30,17 @@ const cerebro = criarCerebro({ config, conhecimento, ia })
 
 console.log(`\n🤖 Robô de "${config.nomeNegocio}"`)
 console.log(config.chaveGemini ? `   IA: Gemini (${config.modelo})${config.chaveReserva ? ' + chave de reserva' : ''}` : '   IA: MODO DEMONSTRAÇÃO (falta a chave do Gemini no .env)')
-console.log(`   Conexão: ${config.numeroRobo ? `código pelo número ${config.numeroRobo}` : 'QR Code'}`)
+console.log(`   Número do robô: ${config.numeroRobo || 'NÃO PREENCHIDO'}`)
+
+// A conexão é sempre por CÓDIGO (sem QR Code): funciona igual no celular e no PC
+if (!config.numeroRobo) {
+  console.log('\n❌ Falta o número do robô.')
+  console.log('   Abra o arquivo .env, preencha NUMERO_DO_ROBO= com o número do WhatsApp do robô')
+  console.log('   (55 + DDD + número, só números) e rode de novo.')
+  console.log('   No Termux: nano ~/chatbot-whatsapp/.env   e depois   bash ~/chatbot-whatsapp/atualizar.sh\n')
+  setInterval(() => {}, 1 << 30) // fica parado esperando, sem reiniciar em sequência
+  await new Promise(() => {})
+}
 console.log(`   Conversas de exemplo carregadas: ${conhecimento.totalConversas}`)
 console.log(`   Horário de atendimento: ${config.horario || '24 horas'}`)
 if (!config.numeroDono) console.log('   ⚠️  SEU_WHATSAPP_PESSOAL vazio: ninguém vai ser avisado quando o cliente pedir atendimento.')
@@ -87,15 +97,24 @@ const atendimento = addKeyword(EVENTS.WELCOME).addAction(async (ctx, { provider,
   }
 })
 
+const provider = createProvider(BaileysProvider, { usePairingCode: true, phoneNumber: config.numeroRobo })
+
+// mostra o código de conexão em destaque, em português
+provider.on('require_action', (acao) => {
+  const codigo = acao?.payload?.code
+  if (!codigo) return
+  console.log('\n==============================================')
+  console.log(`   CÓDIGO PARA CONECTAR:  ${codigo}`)
+  console.log('==============================================')
+  console.log('No WhatsApp do robô: ⋮ → Dispositivos conectados → Conectar dispositivo')
+  console.log('→ Conectar com número de telefone → digite o código (vence em ~1 minuto).\n')
+})
+provider.on('ready', () => console.log('\n✅ WhatsApp conectado! O robô já está atendendo.\n'))
+
 const { httpServer } = await createBot({
   flow: createFlow([atendimento]),
-  // Com NUMERO_DO_ROBO preenchido, conecta por código (serve quando o robô roda no mesmo celular do número).
-  provider: createProvider(BaileysProvider, config.numeroRobo ? { usePairingCode: true, phoneNumber: config.numeroRobo } : {}),
+  provider,
   database: new JsonFileDB({ filename: 'db.json' }),
 })
 httpServer(config.porta)
-console.log(
-  config.numeroRobo
-    ? '\n📱 Para conectar: vai aparecer aqui um CÓDIGO de 8 letras/números. No WhatsApp do robô: ⋮ → Dispositivos conectados → Conectar dispositivo → Conectar com número de telefone → digite o código (ele vence em cerca de 1 minuto).\n'
-    : `\n📱 Para conectar: escaneie o QR Code que aparece aqui, ou abra http://localhost:${config.porta} no navegador deste aparelho.\n`,
-)
+console.log('\n📱 Aguarde: em alguns segundos aparece aqui o CÓDIGO para conectar o WhatsApp do robô.\n')

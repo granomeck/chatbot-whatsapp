@@ -49,7 +49,7 @@ O passo a passo completo abaixo serve para o computador ou para quem quer entend
 | Um número de WhatsApp para o robô (o app pode estar num Android **ou num iPhone**) | Um chip separado |
 | Uma chave grátis do Gemini (a IA do Google) | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
 
-**Tem só iPhone?** O iPhone não consegue rodar o robô, mas pode ser o número conectado: o robô roda no PC e você escaneia o QR Code com o iPhone.
+**Tem só iPhone?** O iPhone não consegue rodar o robô, mas pode ser o número conectado: o robô roda no PC e você digita o código de conexão no WhatsApp do iPhone.
 
 ---
 
@@ -162,16 +162,13 @@ Converse como se fosse um cliente. Teste preço, entrega, Black Friday e "quero 
 npm start
 ```
 
-**Robô e número no MESMO celular (o mais comum no Android):** use o código, porque não dá para escanear um QR Code da própria tela.
+A conexão é sempre por **código**, tanto no celular quanto no PC:
 
-1. No `.env`, preencha `NUMERO_DO_ROBO` com o número do robô (55 + DDD + número) e rode `npm start`.
-2. Vai aparecer um **código de 8 caracteres**.
+1. Confira se o `NUMERO_DO_ROBO` está preenchido no `.env` (55 + DDD + número). O instalador do Android já preenche.
+2. Rode `npm start`. Em alguns segundos aparece **CÓDIGO PARA CONECTAR: XXXX-XXXX**.
 3. No WhatsApp Business do robô: **⋮ (três pontinhos)** → **Dispositivos conectados** → **Conectar dispositivo** → **Conectar com número de telefone** → digite o código. No iPhone, o caminho começa em **Configurações** → **Dispositivos conectados**.
 4. Você tem cerca de **1 minuto** antes de o código vencer. Se vencer, pare com Ctrl + C e rode `npm start` de novo.
-
-**Robô no PC ou num celular diferente do número:** deixe `NUMERO_DO_ROBO` em branco. Vai aparecer um **QR Code**; no celular com o número do robô, abra o WhatsApp → **Dispositivos conectados** → **Conectar dispositivo** e escaneie.
-
-> O QR Code não apareceu ou ficou torto? Abra **http://localhost:3008** no navegador do mesmo aparelho.
+5. Quando aparecer **✅ WhatsApp conectado!**, o robô já está atendendo.
 
 Pronto! Mande uma mensagem de outro número para testar.
 
@@ -246,7 +243,8 @@ Para ninguém ficar sem resposta, ligue a **mensagem de ausência do WhatsApp Bu
 | Erro de modelo não encontrado | Troque `GEMINI_MODELO` no `.env` por outro da [lista de modelos do Gemini](https://ai.google.dev/gemini-api/docs/models), por exemplo `gemini-2.5-flash-lite`. |
 | Robô responde "muitas mensagens agora" | O limite grátis do Gemini foi atingido. Veja o seu limite em [aistudio.google.com](https://aistudio.google.com). Para nunca parar, crie uma segunda chave num projeto com cobrança ativada e coloque em `GEMINI_API_KEY_RESERVA`: ela só é usada quando a grátis falha. |
 | Robô para quando a tela apaga | Bateria do Termux em "Sem restrições" e `termux-wake-lock` (Passo 7). |
-| WhatsApp desconectou | Apague a pasta `bot_sessions`, rode `npm start` e escaneie o QR de novo. |
+| WhatsApp desconectou | Apague a pasta `bot_sessions`, rode `npm start` e digite o novo código no WhatsApp. |
+| Aparece "Falta o número do robô" | Preencha `NUMERO_DO_ROBO` no `.env` e rode o comando de atualizar. |
 | Travou em outro erro | Copie o erro inteiro e cole no Claude, no ChatGPT ou no Gemini (todos têm plano grátis). Se um bater o limite, continue em outro. |
 
 ---
