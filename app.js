@@ -13,6 +13,9 @@ import { tipoDoAnexo, baixarAnexo } from './src/midia.js'
 if (!carregarEnv('.env')) {
   console.log('⚠️  Não achei o arquivo .env. Copie o .env.example com o nome .env e preencha (veja o LEIA-ME).')
 }
+// Se algum pacote de terceiros falhar sem tratar o erro, registra e segue ligado (em vez de cair)
+process.on('unhandledRejection', (e) => console.log(`⚠️  Erro de um pacote interno (o robô continua ligado): ${e?.message || e}`))
+
 const config = lerConfig()
 const conhecimento = carregarConhecimento({ meuNomeNasConversas: config.meuNomeNasConversas })
 const ia = config.chaveGemini
