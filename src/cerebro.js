@@ -1,6 +1,7 @@
 // O "cérebro": decide o que responder. Não depende do WhatsApp, por isso dá para testar no simulador.
 
 const MARCADOR_HUMANO = '[CHAMAR_HUMANO]'
+const MARCADOR_PEDIDO = /\[PEDIDO:?\s*([^\]]*)\]/i // [PEDIDO: 2 bolos de cenoura para sábado 10h, retirada, Ana]
 const MAX_HISTORICO = 12 // mensagens lembradas por cliente
 const ESQUECER_APOS_MS = 6 * 60 * 60 * 1000 // conversa parada há 6h recomeça do zero
 
@@ -20,14 +21,21 @@ export function dentroDoHorario(horario, data = new Date()) {
   return inicio <= fim ? agora >= inicio && agora < fim : agora >= inicio || agora < fim
 }
 
-export function montarInstrucoes({ nomeNegocio, negocio, exemplos }) {
+export function montarInstrucoes({ nomeNegocio, negocio, exemplos, pedidos = false }) {
+  const regraPedido = pedidos
+    ? `- Se o cliente quiser fazer um PEDIDO ou ENCOMENDA: anote produto, quantidade, nome do cliente, dia e horário
+  e se é retirada ou entrega (com endereço). Pergunte o que faltar, uma coisa por vez. Com tudo anotado, repita
+  o resumo para o cliente confirmar. Quando ele confirmar, diga que a equipe vai confirmar o pedido em instantes
+  e escreva no final da resposta: [PEDIDO: resumo do pedido em uma linha].
+- Se não souber a resposta, ou se o cliente quiser negociar, reclamar ou falar com alguém,`
+    : `- Se não souber a resposta, ou se o cliente quiser fechar pedido, negociar, reclamar ou falar com alguém,`
   return `Você é o atendente virtual de "${nomeNegocio}" no WhatsApp.
 
 COMO RESPONDER
 - Português do Brasil, simpático e curto (no máximo 3 frases), como numa conversa de WhatsApp.
 - Use SOMENTE as informações do negócio abaixo. Nunca invente preço, prazo, estoque, endereço ou promoção.
 - Faça uma pergunta por vez para entender o que o cliente precisa e conduza para a compra.
-- Se não souber a resposta, ou se o cliente quiser fechar pedido, negociar, reclamar ou falar com alguém,
+${regraPedido}
   diga que vai chamar uma pessoa da equipe e escreva ${MARCADOR_HUMANO} no final da resposta.
 - Se perguntarem se você é um robô, diga a verdade: é um assistente virtual da loja.
 - Se o cliente mandar um ÁUDIO, ouça e responda ao que ele falou, por texto. Não diga que é um áudio.
@@ -45,7 +53,11 @@ ${exemplos}` : ''}`
 }
 
 export function criarCerebro({ config, conhecimento, ia, agora = () => Date.now() }) {
-  const instrucoes = montarInstrucoes({ nomeNegocio: config.nomeNegocio, ...conhecimento })
+  let instrucoes = montarInstrucoes({ nomeNegocio: config.nomeNegocio, pedidos: config.pedidos, ...conhecimento })
+  // depois que o dono muda algo pelo WhatsApp: passa a usar as informações novas sem reiniciar
+  const recarregar = (novoConhecimento) => {
+    instrucoes = montarInstrucoes({ nomeNegocio: config.nomeNegocio, pedidos: config.pedidos, ...novoConhecimento })
+  }
   const historicos = new Map() // numero -> { msgs: [], ultima: ms }
   const pausados = new Map() // numero -> pausado até (ms)
   const avisoMidia = new Map() // numero -> último aviso (ms)
@@ -108,7 +120,8 @@ export function criarCerebro({ config, conhecimento, ia, agora = () => Date.now(
     }
 
     const precisaHumano = resposta.includes(MARCADOR_HUMANO)
-    resposta = resposta.replaceAll(MARCADOR_HUMANO, '').trim() || 'Vou chamar uma pessoa da equipe para te ajudar!'
+    const pedido = config.pedidos ? resposta.match(MARCADOR_PEDIDO)?.[1]?.trim() : null
+    resposta = resposta.replaceAll(MARCADOR_HUMANO, '').replace(new RegExp(MARCADOR_PEDIDO, 'gi'), '').trim() || 'Vou chamar uma pessoa da equipe para te ajudar!'
     historico.push({ papel: 'robo', texto: resposta })
     while (historico.length > MAX_HISTORICO) historico.shift()
 
@@ -116,6 +129,16 @@ export function criarCerebro({ config, conhecimento, ia, agora = () => Date.now(
     const baloes = resposta.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean)
     const respostas = baloes.length > 3 ? [baloes.slice(0, 2), baloes.slice(2).join('\n')].flat() : baloes
 
+    if (pedido) {
+      // pedido anotado: avisa a equipe e o robô fica quieto com esse cliente enquanto uma pessoa finaliza
+      pausar(numero)
+      return {
+        respostas,
+        chamarHumano: true,
+        pedido,
+        aviso: `🧾 *Novo pedido!*\nCliente: ${nome || 'sem nome'}\nWhatsApp: https://wa.me/${numero}\nPedido: ${pedido}\n\nConfirme com o cliente. O robô fica em silêncio com ele por ${config.pausaMinutos} min.`,
+      }
+    }
     if (precisaHumano) {
       const r = chamarHumano(numero, nome, registro, '')
       return { ...r, respostas }
@@ -132,7 +155,14 @@ export function criarCerebro({ config, conhecimento, ia, agora = () => Date.now(
     return { respostas: ['Esse tipo de arquivo eu ainda não consigo abrir. Pode me mandar por texto, áudio ou foto? 😊'] }
   }
 
-  return { responder, midia, instrucoes }
+  return {
+    responder,
+    midia,
+    recarregar,
+    get instrucoes() {
+      return instrucoes
+    },
+  }
 }
 
 // tempo do "digitando...": proporcional ao tamanho da resposta, entre 1,5 e 5 segundos
