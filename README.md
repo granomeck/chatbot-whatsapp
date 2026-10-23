@@ -134,7 +134,7 @@ O que preencher:
 Não precisa mexer em arquivo nenhum. Quando o robô conecta pela primeira vez, ele **manda uma mensagem de configuração no seu WhatsApp pessoal** (o número de `SEU_WHATSAPP_PESSOAL`) e te guia em 2 passos:
 
 1. **Conversas de exemplo:** você exporta conversas com clientes e manda para o robô (⋮ → Mais → Exportar conversa → Sem mídia). Se a conversa estiver no WhatsApp do próprio negócio, mande para o seu WhatsApp pessoal e depois encaminhe para o robô.
-2. **Informações do negócio:** o robô te manda um texto pronto para colar numa IA grátis (Claude, ChatGPT ou Gemini) junto com fotos do catálogo, prints de preços e o link do seu Instagram ou site. Você cola a resposta da IA na conversa com o robô e pronto.
+2. **Informações do negócio:** o robô te manda um texto pronto para colar numa IA grátis (Claude, ChatGPT ou Gemini) junto com o seu catálogo, prints de preços e o link do seu Instagram ou site. Você cola a resposta da IA na conversa com o robô e pronto.
 
 Depois, para mudar qualquer coisa, mande **atualizar** para o robô:
 
