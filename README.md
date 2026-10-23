@@ -22,6 +22,24 @@ Este robô conecta pelo **WhatsApp Web**, que não é a API oficial do WhatsApp.
 
 ---
 
+## ⚡ Jeito rápido no Android: uma linha só
+
+1. Instale o **[Termux pela Play Store](https://play.google.com/store/apps/details?id=com.termux)** e coloque a bateria dele em **Sem restrições** (Configurações → Apps → Termux → Bateria).
+2. Crie a sua chave grátis do Gemini em **[aistudio.google.com/apikey](https://aistudio.google.com/apikey)**.
+3. Abra o Termux, cole esta linha e aperte Enter:
+
+```
+pkg install -y curl && curl -fsSL https://raw.githubusercontent.com/granomeck/chatbot-whatsapp/main/instalar.sh | bash
+```
+
+Ele instala tudo, baixa o robô, pergunta a chave e os números, liga o robô 24h e mostra o código para conectar no WhatsApp Business (**⋮ → Dispositivos conectados → Conectar dispositivo → Conectar com número de telefone**).
+
+Depois, é só escrever as informações do seu negócio (`nano ~/chatbot-whatsapp/meu-negocio.txt`) e rodar `bash ~/chatbot-whatsapp/atualizar.sh`.
+
+O passo a passo completo abaixo serve para o computador ou para quem quer entender cada etapa.
+
+---
+
 ## O que você precisa
 
 | Item | Onde conseguir |
