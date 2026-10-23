@@ -9,6 +9,7 @@ import { criarCerebro, tempoDigitando } from './src/cerebro.js'
 import { criarIAGemini } from './src/ia-gemini.js'
 import { criarIADemo } from './src/ia-demo.js'
 import { tipoDoAnexo, baixarAnexo } from './src/midia.js'
+import { ligarConexaoPorCodigo } from './src/conexao.js'
 
 if (!carregarEnv('.env')) {
   console.log('⚠️  Não achei o arquivo .env. Copie o .env.example com o nome .env e preencha (veja o LEIA-ME).')
@@ -97,18 +98,10 @@ const atendimento = addKeyword(EVENTS.WELCOME).addAction(async (ctx, { provider,
   }
 })
 
-const provider = createProvider(BaileysProvider, { usePairingCode: true, phoneNumber: config.numeroRobo })
-
-// mostra o código de conexão em destaque, em português
-provider.on('require_action', (acao) => {
-  const codigo = acao?.payload?.code
-  if (!codigo) return
-  console.log('\n==============================================')
-  console.log(`   CÓDIGO PARA CONECTAR:  ${codigo}`)
-  console.log('==============================================')
-  console.log('No WhatsApp do robô: ⋮ → Dispositivos conectados → Conectar dispositivo')
-  console.log('→ Conectar com número de telefone → digite o código (vence em ~1 minuto).\n')
-})
+// usePairingCode fica desligado de propósito: quem pede o código é o src/conexao.js, na hora certa
+// clearAuthOnLogout: se o WhatsApp recusar a sessão salva, ela é apagada e um código novo é gerado
+const provider = createProvider(BaileysProvider, { usePairingCode: false, clearAuthOnLogout: true })
+ligarConexaoPorCodigo(provider, config.numeroRobo)
 provider.on('ready', () => console.log('\n✅ WhatsApp conectado! O robô já está atendendo.\n'))
 
 const { httpServer } = await createBot({
