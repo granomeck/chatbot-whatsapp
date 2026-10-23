@@ -16,6 +16,8 @@ Robô de atendimento no WhatsApp, em Node.js (versão 20 ou mais nova), feito co
 | Palavras que fazem o robô chamar uma pessoa | `src/cerebro.js`, constante `PEDIDO_HUMANO` |
 | Conexão com o Gemini, chave de reserva | `src/ia-gemini.js` |
 | Ligação com o WhatsApp (digitando, aviso ao dono, grupos) | `app.js` |
+| Áudios e fotos que chegam (baixar e mandar ao Gemini) | `src/midia.js` |
+| Compatibilidade com Android/Termux | `src/compat-android.js` |
 | Como as conversas exportadas são limpas | `src/limpar-conversas.js` |
 
 O cérebro (`src/cerebro.js`) não depende do WhatsApp. Por isso dá para testar tudo com `npm run simular` e com os testes em `testes/`.

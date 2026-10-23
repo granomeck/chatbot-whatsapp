@@ -1,4 +1,5 @@
 // Liga o cérebro do robô ao WhatsApp (BuilderBot + Baileys).
+import './src/compat-android.js' // precisa ser o primeiro: deixa o BuilderBot rodar no Termux
 import { createBot, createProvider, createFlow, addKeyword, EVENTS } from '@builderbot/bot'
 import { BaileysProvider } from '@builderbot/provider-baileys'
 import { JsonFileDB } from '@builderbot/database-json'
@@ -7,6 +8,7 @@ import { carregarConhecimento } from './src/conhecimento.js'
 import { criarCerebro, tempoDigitando } from './src/cerebro.js'
 import { criarIAGemini } from './src/ia-gemini.js'
 import { criarIADemo } from './src/ia-demo.js'
+import { tipoDoAnexo, baixarAnexo } from './src/midia.js'
 
 if (!carregarEnv('.env')) {
   console.log('⚠️  Não achei o arquivo .env. Copie o .env.example com o nome .env e preencha (veja o LEIA-ME).')
@@ -47,9 +49,22 @@ const atendimento = addKeyword(EVENTS.WELCOME).addAction(async (ctx, { provider,
   if (jid.endsWith('@g.us') || jid === 'status@broadcast') return // não responde grupos nem status
 
   const texto = (ctx.body || '').trim()
-  const resultado = texto.startsWith('_event_')
-    ? cerebro.midia(ctx.from)
-    : await cerebro.responder(ctx.from, ctx.name, texto)
+  let resultado
+  if (texto.startsWith('_event_')) {
+    // áudio ou foto: o Gemini ouve/vê e responde; o resto (vídeo, figurinha, documento) recebe um aviso
+    const info = tipoDoAnexo(ctx)
+    let anexo = null
+    if (info) {
+      try {
+        anexo = await baixarAnexo(provider, ctx, info)
+      } catch (e) {
+        console.log(`⚠️  Não consegui baixar o ${info.tipo} de ${ctx.from}: ${e.message}`)
+      }
+    }
+    resultado = anexo ? await cerebro.responder(ctx.from, ctx.name, anexo.legenda, anexo) : cerebro.midia(ctx.from)
+  } else {
+    resultado = await cerebro.responder(ctx.from, ctx.name, texto)
+  }
 
   if (resultado.erro) console.log(`⚠️  ${ctx.from}: ${resultado.erro}`)
   if (resultado.ignorar) return

@@ -6,6 +6,7 @@ O que ele faz:
 
 - Responde dúvidas usando as informações do seu negócio (preços, horário, entrega, promoções).
 - Aprende o seu jeito de responder com as suas conversas antigas do WhatsApp.
+- **Entende áudios e fotos** (o Gemini ouve a mensagem de voz e vê a imagem, e responde por texto).
 - Mostra "digitando..." antes de responder, como uma pessoa.
 - Quando o cliente pede para falar com alguém, **te avisa no seu WhatsApp pessoal** e fica quieto com esse cliente para você atender.
 - Pode responder só no seu horário de atendimento.
