@@ -98,7 +98,7 @@ test('fora do horário o robô fica quieto; mídia é avisada uma vez', async ()
   const fora = criarCerebro({ config: { ...configBase, horario: '08:00-18:00' }, conhecimento: {}, ia: iaQueResponde('oi'), agora: () => new Date(2026, 10, 27, 22, 0).getTime() })
   assert.equal((await fora.responder('1', 'X', 'oi')).motivo, 'fora_do_horario')
   const c = criarCerebro({ config: configBase, conhecimento: {}, ia: iaQueResponde('oi') })
-  assert.match(c.midia('1').respostas[0], /só consigo ler/)
+  assert.match(c.midia('1').respostas[0], /não consigo abrir/)
   assert.ok(c.midia('1').ignorar)
 })
 
@@ -141,4 +141,59 @@ test('config lê número do robô e chave de reserva', () => {
   assert.equal(c.numeroRobo, '5515999990000')
   assert.equal(c.chaveReserva, 'AIzaReserva')
   assert.equal(lerConfig({}).numeroRobo, '')
+})
+
+test('áudio e imagem: identifica o tipo e limpa o mime', async () => {
+  const { tipoDoAnexo, limparMime } = await import('../src/midia.js')
+  assert.deepEqual(tipoDoAnexo({ message: { audioMessage: { mimetype: 'audio/ogg; codecs=opus' } } }), { tipo: 'audio', mime: 'audio/ogg', legenda: '' })
+  assert.deepEqual(tipoDoAnexo({ message: { imageMessage: { mimetype: 'image/jpeg', caption: 'tem no M?' } } }), { tipo: 'imagem', mime: 'image/jpeg', legenda: 'tem no M?' })
+  assert.equal(tipoDoAnexo({ message: { stickerMessage: {} } }), null)
+  assert.equal(limparMime('', 'audio/ogg'), 'audio/ogg')
+})
+
+test('baixa o anexo em base64 e apaga o arquivo temporário', async () => {
+  const { baixarAnexo, LIMITE_BYTES } = await import('../src/midia.js')
+  const { writeFile } = await import('node:fs/promises')
+  const { existsSync } = await import('node:fs')
+  const { join } = await import('node:path')
+  const { tmpdir } = await import('node:os')
+  let caminho
+  const provider = { async saveFile(ctx, { path }) { caminho = join(path, 'teste-audio.ogg'); await writeFile(caminho, Buffer.from('ABC')); return caminho } }
+  const a = await baixarAnexo(provider, {}, { tipo: 'audio', mime: 'audio/ogg', legenda: '' })
+  assert.equal(a.base64, Buffer.from('ABC').toString('base64'))
+  assert.ok(!existsSync(caminho))
+  const grande = { async saveFile(ctx, { path }) { caminho = join(path, 'grande.jpg'); await writeFile(caminho, Buffer.alloc(LIMITE_BYTES + 1)); return caminho } }
+  assert.equal(await baixarAnexo(grande, {}, { tipo: 'imagem', mime: 'image/jpeg', legenda: '' }), null)
+  assert.ok(!existsSync(caminho) && tmpdir())
+})
+
+test('cérebro manda o anexo para a IA e guarda só um resumo na memória', async () => {
+  let recebido
+  const ia = { async gerar(p) { recebido = p; return 'Entendi! Temos sim no M.' } }
+  const c = criarCerebro({ config: configBase, conhecimento: {}, ia })
+  const anexo = { tipo: 'audio', mime: 'audio/ogg', base64: 'QUJD', legenda: '' }
+  const r = await c.responder('1', 'Ana', '', anexo)
+  assert.deepEqual(r.respostas, ['Entendi! Temos sim no M.'])
+  assert.equal(recebido.anexo, anexo)
+  assert.equal(recebido.historico[0].texto, '[áudio enviado pelo cliente]')
+  const foto = await c.responder('2', 'Bia', 'quero falar com um atendente', { tipo: 'imagem', mime: 'image/jpeg', base64: 'x', legenda: 'quero falar com um atendente' })
+  assert.ok(foto.chamarHumano) // legenda pedindo humano chama humano
+})
+
+test('Gemini recebe o áudio junto da última mensagem do cliente', async () => {
+  const { criarIAGemini, montarConteudo } = await import('../src/ia-gemini.js')
+  const hist = [{ papel: 'cliente', texto: 'oi' }, { papel: 'robo', texto: 'olá' }, { papel: 'cliente', texto: '[áudio enviado pelo cliente]' }]
+  const anexo = { mime: 'audio/ogg', base64: 'QUJD' }
+  const c = montarConteudo(hist, anexo)
+  assert.deepEqual(c[2].parts[0], { inlineData: { mimeType: 'audio/ogg', data: 'QUJD' } })
+  assert.equal(c[0].parts.length, 1)
+  const original = globalThis.fetch; let corpo
+  globalThis.fetch = async (u, op) => { corpo = JSON.parse(op.body); return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) } }
+  try { await criarIAGemini({ chave: 'k', modelo: 'm' }).gerar({ instrucoes: 'i', historico: hist, anexo }) } finally { globalThis.fetch = original }
+  assert.equal(corpo.contents[2].parts[0].inlineData.data, 'QUJD')
+})
+
+test('vídeo/figurinha continuam recebendo o aviso', () => {
+  const c = criarCerebro({ config: configBase, conhecimento: {}, ia: iaQueResponde('x') })
+  assert.match(c.midia('9').respostas[0], /texto, áudio ou foto/)
 })
