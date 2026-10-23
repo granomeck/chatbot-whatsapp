@@ -8,7 +8,8 @@
     "start": "node app.js",
     "simular": "node simulador.js",
     "testar": "node --test",
-    "atualizar": "bash atualizar.sh"
+    "atualizar": "bash atualizar.sh",
+    "postinstall": "node src/preparar-android.js"
   },
   "engines": {
     "node": ">=20"

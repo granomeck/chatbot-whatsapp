@@ -47,6 +47,7 @@ if [ ! -d node_modules ] || [ package.json -nt node_modules ]; then
   fi
   touch node_modules
 fi
+node src/preparar-android.js
 verde "✓ Pacotes em dia"
 
 # 3. Confere se o código não tem erro de digitação

@@ -59,6 +59,7 @@ cd "$PASTA" || falhou "Não achei a pasta do robô."
 # ---------------------------------------------------------------- 3
 titulo "3/5 · Instalando os pacotes (pode demorar uns minutos)"
 npm install --no-audit --no-fund || falhou "A instalação dos pacotes falhou."
+  node src/preparar-android.js
 verde "✓ Pacotes instalados"
 
 # ---------------------------------------------------------------- 4
