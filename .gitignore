@@ -5,3 +5,5 @@ bot_sessions/
 *_sessions/
 *.qr.png
 conversas/*.txt
+ajustes.json
+meu-negocio.anterior.txt
