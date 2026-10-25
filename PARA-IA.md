@@ -22,6 +22,9 @@ Robô de atendimento no WhatsApp, em Node.js (versão 20 ou mais nova), feito co
 | Ajustes feitos pelo WhatsApp (horário, grupo de avisos, pedidos) | `src/ajustes.js` (salvos em `ajustes.json`) |
 | Pedidos e encomendas (marcador `[PEDIDO: ...]`) | `src/cerebro.js` |
 | Conversas do iPhone em .zip | `src/zip.js` |
+| Instalador de uma linha no Windows (PowerShell) | `instalar.ps1` |
+| Ligar o robô no Windows (janela que religa sozinha) | `ligar-robo.bat` |
+| Instalador de uma linha no Android (Termux) | `instalar.sh` |
 | Compatibilidade com Android/Termux | `src/compat-android.js` e `src/preparar-android.js` |
 | Como as conversas exportadas são limpas | `src/limpar-conversas.js` |
 

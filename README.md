@@ -37,7 +37,23 @@ Ele instala tudo, baixa o robô, pergunta a chave e os números, liga o robô 24
 
 Assim que conecta, o robô manda uma mensagem no seu WhatsApp pessoal e te guia para ensinar a ele sobre o seu negócio (veja o item 4.2). Para mudar algo depois, mande **atualizar** para o robô.
 
-O passo a passo completo abaixo serve para o computador ou para quem quer entender cada etapa.
+## ⚡ Jeito rápido no computador (Windows 10 ou 11): uma linha só
+
+1. Crie a sua chave grátis do Gemini em **[aistudio.google.com/apikey](https://aistudio.google.com/apikey)**.
+2. Aperte a **tecla Windows**, digite **PowerShell** e aperte Enter.
+3. Cole esta linha e aperte Enter:
+
+```
+irm https://raw.githubusercontent.com/granomeck/chatbot-whatsapp/main/instalar.ps1 | iex
+```
+
+Ele instala o Node.js (se o Windows perguntar se pode fazer alterações, clique em **Sim**), baixa o robô, faz as mesmas 4 perguntas, cria o atalho **Robô WhatsApp** na área de trabalho e abre a janela do robô com o código para conectar no WhatsApp Business.
+
+- **Não feche** a janela preta "Robo WhatsApp" (pode minimizar). Se o robô cair, ele religa sozinho.
+- O instalador pergunta se o robô deve **ligar sozinho** quando o computador ligar e se pode **tirar a suspensão** (na tomada).
+- Para atualizar o robô para a versão mais nova, rode a mesma linha de novo: suas configurações, o `meu-negocio.txt` e as conversas são mantidos.
+
+O passo a passo completo abaixo serve para quem quer entender cada etapa.
 
 ---
 
@@ -78,8 +94,10 @@ O passo a passo completo abaixo serve para o computador ou para quem quer entend
 
 ### Opção B: PC ou notebook (Windows)
 
+> O jeito rápido (uma linha no PowerShell, lá em cima) já faz este passo sozinho.
+
 1. Instale o **[Node.js](https://nodejs.org/pt/download)** (versão **LTS**), clicando em "Avançar" até o fim.
-2. Instale o **[Git](https://git-scm.com/downloads/win)**, também só clicando em "Avançar".
+2. (Opcional) Instale o **[Git](https://git-scm.com/downloads/win)**, também só clicando em "Avançar". Sem o Git, baixe o robô em **Code → Download ZIP**.
 
 ---
 
@@ -226,7 +244,7 @@ Se você mudar alguma coisa nos arquivos, como o `meu-negocio.txt`, o `.env`, as
 bash ~/chatbot-whatsapp/atualizar.sh
 ```
 
-No Windows, dê dois cliques no arquivo `atualizar.bat` dentro da pasta do robô.
+No Windows, dê dois cliques no arquivo `atualizar.bat` dentro da pasta do robô (ele fecha a janela do robô e abre de novo, já com as mudanças).
 
 O comando confere a configuração, instala o que faltar, procura erros no código, roda os testes e reinicia o robô. Se encontrar algum problema, ele avisa e **não** reinicia, e o robô antigo continua funcionando.
 

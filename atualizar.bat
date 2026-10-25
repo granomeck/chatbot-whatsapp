@@ -20,7 +20,15 @@ for %%f in (app.js simulador.js src\*.js) do (
 echo [OK] Codigo sem erros de digitacao
 call npm run testar --silent > "%TEMP%\testes-robo.txt" 2>&1 || (echo [X] Algum teste falhou. Veja %TEMP%\testes-robo.txt & pause & exit /b 1)
 echo [OK] Testes automaticos passando
-where pm2 >nul 2>nul && (call pm2 restart robo --update-env && call pm2 save && echo [OK] Robo reiniciado com as mudancas) || echo [!] Para ligar o robo agora: npm start
+rem Reinicia o robo: fecha a janela "Robo WhatsApp" e abre de novo (ou usa o pm2, se voce instalou)
+tasklist /v /fi "WINDOWTITLE eq Robo WhatsApp*" 2>nul | find /i "Robo WhatsApp" >nul
+if not errorlevel 1 (
+  taskkill /fi "WINDOWTITLE eq Robo WhatsApp*" /t /f >nul 2>&1
+  start "" "%~dp0ligar-robo.bat"
+  echo [OK] Robo reiniciado com as mudancas
+) else (
+  where pm2 >nul 2>nul && (call pm2 restart robo --update-env && call pm2 save && echo [OK] Robo reiniciado com as mudancas) || echo [!] Para ligar o robo: dois cliques no atalho "Robo WhatsApp" ou no arquivo ligar-robo.bat
+)
 echo.
 echo Pronto! Sucesso!
 pause
